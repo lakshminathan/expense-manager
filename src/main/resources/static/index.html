@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ledger Bloom</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div class="backdrop backdrop-one"></div>
+  <div class="backdrop backdrop-two"></div>
+  <div class="page-shell">
+    <header class="hero-shell">
+      <div class="hero-copy-panel">
+        <div class="hero-chip-row">
+          <span class="eyebrow">Standalone Product Seed</span>
+          <span class="micro-pill">Tiger Team Sandbox</span>
+        </div>
+        <h1>Ledger Bloom</h1>
+        <p class="hero-copy">
+          A clean expense workspace with enough depth for design, service work, QA, and security.
+          Track spending, manage budgets, review reimbursement flow, and use it as a live product the team can extend.
+        </p>
+        <div class="hero-actions">
+          <button id="refresh-button" class="primary-button" type="button">Refresh snapshot</button>
+          <span class="hero-note">Hosted on the same machine and ready for production-style changes.</span>
+        </div>
+      </div>
+
+      <div class="hero-signal-panel">
+        <div class="signal-card signal-card-month">
+          <span>Current month</span>
+          <strong id="current-month-label">--</strong>
+          <small id="hero-attention-note">Waiting for data</small>
+        </div>
+        <div class="signal-card">
+          <span>Total spend</span>
+          <strong id="hero-total-spend">₹0</strong>
+        </div>
+        <div class="signal-card">
+          <span>Budget usage</span>
+          <strong id="hero-budget-usage">0%</strong>
+        </div>
+        <div class="signal-card signal-card-wide">
+          <span>Top category</span>
+          <strong id="top-category-label">No spend yet</strong>
+          <small id="top-category-value">₹0</small>
+        </div>
+      </div>
+    </header>
+
+    <section class="insight-band">
+      <article class="insight-card">
+        <span class="insight-label">Runway left</span>
+        <strong id="runway-left">₹0</strong>
+        <small id="runway-copy">Budget capacity available this month.</small>
+      </article>
+      <article class="insight-card">
+        <span class="insight-label">Reimbursement queue</span>
+        <strong id="pending-claims-count">0</strong>
+        <small id="pending-claims-value">₹0 awaiting decision</small>
+      </article>
+      <article class="insight-card">
+        <span class="insight-label">Attention area</span>
+        <strong id="attention-title">Stable</strong>
+        <small id="attention-copy">No categories are close to their threshold.</small>
+      </article>
+      <article class="insight-card insight-card-accent">
+        <span class="insight-label">Team signal</span>
+        <strong id="ledger-health">Balanced month</strong>
+        <small id="ledger-health-copy">Spend, budget pressure, and approval flow are healthy.</small>
+      </article>
+    </section>
+
+    <main class="workspace-grid">
+      <div class="workspace-main">
+        <section class="card card-soft filters-card">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Working set</p>
+              <h2>Filters</h2>
+            </div>
+          </div>
+          <div class="filters-grid">
+            <label>
+              <span>Month</span>
+              <input id="month-filter" type="month">
+            </label>
+            <label>
+              <span>Category</span>
+              <select id="category-filter"></select>
+            </label>
+            <label class="search-field">
+              <span>Search</span>
+              <input id="query-filter" type="search" placeholder="Merchant, owner, note">
+            </label>
+          </div>
+        </section>
+
+        <section class="stats-grid">
+          <article class="card stat-card">
+            <span>Total spent</span>
+            <strong id="total-spent">₹0</strong>
+            <small id="expense-count">0 expenses</small>
+          </article>
+          <article class="card stat-card">
+            <span>Reimbursable</span>
+            <strong id="reimbursable-total">₹0</strong>
+            <small>Eligible for claims</small>
+          </article>
+          <article class="card stat-card">
+            <span>Approved</span>
+            <strong id="approved-total">₹0</strong>
+            <small>Approved or reimbursed</small>
+          </article>
+          <article class="card stat-card">
+            <span>Budgeted</span>
+            <strong id="budgeted-total">₹0</strong>
+            <small id="budget-percent">0% used</small>
+          </article>
+        </section>
+
+        <section class="card card-elevated form-card">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Operations</p>
+              <h2>Add or update expense</h2>
+            </div>
+            <button id="reset-expense-button" class="ghost-button" type="button">New expense</button>
+          </div>
+          <form id="expense-form" class="form-grid">
+            <input id="expense-id" type="hidden">
+            <label>
+              <span>Description</span>
+              <input id="description" name="description" maxlength="160" required>
+            </label>
+            <label>
+              <span>Merchant</span>
+              <input id="merchant" name="merchant" maxlength="120" required>
+            </label>
+            <label>
+              <span>Amount</span>
+              <input id="amount" name="amount" type="number" step="0.01" min="0.01" required>
+            </label>
+            <label>
+              <span>Date</span>
+              <input id="expense-date" name="expenseDate" type="date" required>
+            </label>
+            <label>
+              <span>Category</span>
+              <select id="expense-category" name="category" required></select>
+            </label>
+            <label>
+              <span>Payment method</span>
+              <select id="payment-method" name="paymentMethod" required></select>
+            </label>
+            <label>
+              <span>Status</span>
+              <select id="expense-status" name="status" required></select>
+            </label>
+            <label>
+              <span>Owner</span>
+              <input id="owner-name" name="ownerName" maxlength="120" required>
+            </label>
+            <label>
+              <span>Receipt URL</span>
+              <input id="receipt-url" name="receiptUrl" type="url" maxlength="300" placeholder="https://...">
+            </label>
+            <label class="full-span">
+              <span>Note</span>
+              <textarea id="expense-note" name="note" maxlength="800" rows="3" placeholder="Context, approvals, follow-up details"></textarea>
+            </label>
+            <label class="checkbox-row full-span">
+              <input id="reimbursable" name="reimbursable" type="checkbox">
+              <span>Mark as reimbursable</span>
+            </label>
+            <div class="form-actions full-span">
+              <button class="primary-button" type="submit">Save expense</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card ledger-card">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Ledger</p>
+              <h2>Expenses</h2>
+            </div>
+          </div>
+          <div class="table-shell">
+            <table>
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Owner</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="expense-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <aside class="workspace-side">
+        <section class="card card-spotlight">
+          <div class="section-heading compact-heading">
+            <div>
+              <p class="eyebrow">Pulse</p>
+              <h2>Month outlook</h2>
+            </div>
+          </div>
+          <div class="spotlight-metric">
+            <span>Budget pressure</span>
+            <strong id="budget-pressure-label">0%</strong>
+          </div>
+          <div class="progress-shell">
+            <div id="budget-pressure-bar" class="progress-fill"></div>
+          </div>
+          <p id="budget-pressure-copy" class="spotlight-copy">Spend is comfortably within the current budget envelope.</p>
+        </section>
+
+        <section class="card form-card budget-card">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Planning</p>
+              <h2>Monthly budgets</h2>
+            </div>
+            <button id="reset-budget-button" class="ghost-button" type="button">Reset budget form</button>
+          </div>
+          <form id="budget-form" class="budget-form-grid">
+            <label>
+              <span>Budget month</span>
+              <input id="budget-month" type="month" required>
+            </label>
+            <label>
+              <span>Category</span>
+              <select id="budget-category" required></select>
+            </label>
+            <label>
+              <span>Limit amount</span>
+              <input id="budget-limit" type="number" step="0.01" min="1" required>
+            </label>
+            <label>
+              <span>Alert threshold %</span>
+              <input id="budget-threshold" type="number" min="1" max="100" required>
+            </label>
+            <label class="full-span">
+              <span>Notes</span>
+              <textarea id="budget-notes" rows="2" maxlength="400" placeholder="Why this budget exists, guardrails, exceptions"></textarea>
+            </label>
+            <div class="form-actions full-span">
+              <button class="secondary-button" type="submit">Save budget</button>
+            </div>
+          </form>
+          <div id="budget-list" class="budget-list"></div>
+        </section>
+
+        <section class="card chart-card">
+          <div class="section-heading compact-heading">
+            <div>
+              <p class="eyebrow">Insight</p>
+              <h2>Category breakdown</h2>
+            </div>
+          </div>
+          <div id="category-breakdown" class="category-breakdown"></div>
+        </section>
+
+        <section class="card activity-card">
+          <div class="section-heading compact-heading">
+            <div>
+              <p class="eyebrow">Recent movement</p>
+              <h2>Activity feed</h2>
+            </div>
+          </div>
+          <div id="recent-activity" class="recent-activity"></div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js" defer></script>
+</body>
+</html>
