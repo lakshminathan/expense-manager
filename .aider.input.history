@@ -94,3 +94,51 @@
 +- Only touch allowed paths when they are provided: repo-wide minimal edit
 +- Leave the workspace ready for git commit and PR creation.
 +
+
+# 2026-04-10 19:19:12.165916
++You are editing the Expense Manager repository on a dedicated project runner VM.
++
++Primary Jira issue to implement exactly:
++- Key: EXPENSE-117
++- Summary: UI Update: Change expense tracker color from orange to purple
++- Description: Implement the complete product-facing UI/layout change requested by story EXPENSE-116. Requested outcome: Create the single smallest delivery story needed to complete epic EXPENSE-115 (UI Update: Change expense tracker color from orange to purple). Keep the scope intentionally narrow so the Tiger Team can implement, review, and deploy it end to end.. Keep the change minimal, traceable, and ready for immediate validation.
++- Bot role: frontend_developer
++
++Requested change:
++- Implement this issue exactly as written. Summary: UI Update: Change expense tracker color from orange to purple Description: Implement the complete product-facing UI/layout change requested by story EXPENSE-116. Requested outcome: Create the single smallest delivery story needed to complete epic EXPENSE-115 (UI Update: Change expense tracker color from orange to purple). Keep the scope intentionally narrow so the Tiger Team can implement, review, and deploy it end to end.. Keep the change minimal, traceable, and ready for immediate validation.
++
++Supporting context from parent Jira items:
++- Implement the complete product-facing UI/layout change requested by story EXPENSE-116. Requested outcome: Create the single smallest delivery story needed to complete epic EXPENSE-115 (UI Update: Change expense tracker color from orange to purple). Keep the scope intentionally narrow so the Tiger Team can implement, review, and deploy it end to end.. Keep the change minimal, traceable, and ready for immediate validation. Ancestor EXPENSE-116 summary: UI Update: Change expense tracker color from orange to purple Ancestor EXPENSE-116 description: Create the single smallest delivery story needed to complete epic EXPENSE-115 (UI Update: Change expense tracker color from orange to purple). Keep the scope intentionally narrow so the Tiger Team can implement, review, and deploy it end to end. Ancestor EXPENSE-115 summary: UI Update: Change expense tracker color from orange to purple Ancestor EXPENSE-115 description: Change the UI color theme of the Expense Tracker within the expense project from orange to purple.
++
++Rules:
++- Treat the primary Jira issue above as the source of truth for the code change.
++- Use the parent context only as supporting background, never as a reason to replace the requested change.
++- Keep the change minimal and production-safe.
++- Prefer a single-file change when the request is trivial.
++- Only touch allowed paths when they are provided: repo-wide minimal edit
++- Leave the workspace ready for git commit and PR creation.
++
+
+# 2026-04-10 19:19:12.165975
++You are editing the Expense Manager repository on a dedicated project runner VM.
++
++Primary Jira issue to implement exactly:
++- Key: EXPENSE-117
++- Summary: UI Update: Change expense tracker color from orange to purple
++- Description: Implement the complete product-facing UI/layout change requested by story EXPENSE-116. Requested outcome: Create the single smallest delivery story needed to complete epic EXPENSE-115 (UI Update: Change expense tracker color from orange to purple). Keep the scope intentionally narrow so the Tiger Team can implement, review, and deploy it end to end.. Keep the change minimal, traceable, and ready for immediate validation.
++- Bot role: frontend_developer
++
++Requested change:
++- Implement this issue exactly as written. Summary: UI Update: Change expense tracker color from orange to purple Description: Implement the complete product-facing UI/layout change requested by story EXPENSE-116. Requested outcome: Create the single smallest delivery story needed to complete epic EXPENSE-115 (UI Update: Change expense tracker color from orange to purple). Keep the scope intentionally narrow so the Tiger Team can implement, review, and deploy it end to end.. Keep the change minimal, traceable, and ready for immediate validation.
++
++Supporting context from parent Jira items:
++- Implement the complete product-facing UI/layout change requested by story EXPENSE-116. Requested outcome: Create the single smallest delivery story needed to complete epic EXPENSE-115 (UI Update: Change expense tracker color from orange to purple). Keep the scope intentionally narrow so the Tiger Team can implement, review, and deploy it end to end.. Keep the change minimal, traceable, and ready for immediate validation. Ancestor EXPENSE-116 summary: UI Update: Change expense tracker color from orange to purple Ancestor EXPENSE-116 description: Create the single smallest delivery story needed to complete epic EXPENSE-115 (UI Update: Change expense tracker color from orange to purple). Keep the scope intentionally narrow so the Tiger Team can implement, review, and deploy it end to end. Ancestor EXPENSE-115 summary: UI Update: Change expense tracker color from orange to purple Ancestor EXPENSE-115 description: Change the UI color theme of the Expense Tracker within the expense project from orange to purple.
++
++Rules:
++- Treat the primary Jira issue above as the source of truth for the code change.
++- Use the parent context only as supporting background, never as a reason to replace the requested change.
++- Keep the change minimal and production-safe.
++- Prefer a single-file change when the request is trivial.
++- Only touch allowed paths when they are provided: repo-wide minimal edit
++- Leave the workspace ready for git commit and PR creation.
++
