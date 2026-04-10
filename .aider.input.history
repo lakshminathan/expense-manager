@@ -1,0 +1,38 @@
+
+# 2026-04-10 11:01:51.873438
++You are editing the Expense Manager repository on a dedicated project runner VM.
++
++Jira issue:
++- Key: EXPENSE-69
++- Summary: Change global app text color to purple
++- Description: Epic to track the change of global text color to purple across the Expense Manager application. Ancestor EXPENSE-56 summary: Change global app text color to purple Ancestor EXPENSE-56 description: Epic to track the change of global text color to purple across the Expense Manager application.
++- Bot role: frontend_developer
++
++Requested change:
++- Complete the Jira issue with the smallest possible code change.
++
++Rules:
++- Keep the change minimal and production-safe.
++- Prefer a single-file change when the request is trivial.
++- Only touch allowed paths when they are provided: repo-wide minimal edit
++- Leave the workspace ready for git commit and PR creation.
++
+
+# 2026-04-10 11:01:51.873503
++You are editing the Expense Manager repository on a dedicated project runner VM.
++
++Jira issue:
++- Key: EXPENSE-69
++- Summary: Change global app text color to purple
++- Description: Epic to track the change of global text color to purple across the Expense Manager application. Ancestor EXPENSE-56 summary: Change global app text color to purple Ancestor EXPENSE-56 description: Epic to track the change of global text color to purple across the Expense Manager application.
++- Bot role: frontend_developer
++
++Requested change:
++- Complete the Jira issue with the smallest possible code change.
++
++Rules:
++- Keep the change minimal and production-safe.
++- Prefer a single-file change when the request is trivial.
++- Only touch allowed paths when they are provided: repo-wide minimal edit
++- Leave the workspace ready for git commit and PR creation.
++
