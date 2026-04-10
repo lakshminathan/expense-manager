@@ -1,0 +1,48 @@
+
+# 2026-04-10 18:31:27.645435
++You are editing the Expense Manager repository on a dedicated project runner VM.
++
++Primary Jira issue to implement exactly:
++- Key: EXPENSE-110
++- Summary: Implement supporting logic for Change application color scheme from orange to purple
++- Description: Handle any supporting backend, API, data, or wiring changes required for story EXPENSE-108. Requested outcome: Create the single smallest delivery story needed to complete epic EXPENSE-107 (Change application color scheme from orange to purple). Keep the scope intentionally narrow so the Tiger Team can implement, review, and deploy it end to end.. Document assumptions for the lead.
++- Bot role: backend_developer
++
++Requested change:
++- Implement this issue exactly as written. Summary: Implement supporting logic for Change application color scheme from orange to purple Description: Handle any supporting backend, API, data, or wiring changes required for story EXPENSE-108. Requested outcome: Create the single smallest delivery story needed to complete epic EXPENSE-107 (Change application color scheme from orange to purple). Keep the scope intentionally narrow so the Tiger Team can implement, review, and deploy it end to end.. Document assumptions for the lead.
++
++Supporting context from parent Jira items:
++- Handle any supporting backend, API, data, or wiring changes required for story EXPENSE-108. Requested outcome: Create the single smallest delivery story needed to complete epic EXPENSE-107 (Change application color scheme from orange to purple). Keep the scope intentionally narrow so the Tiger Team can implement, review, and deploy it end to end.. Document assumptions for the lead. Ancestor EXPENSE-108 summary: Change application color scheme from orange to purple Ancestor EXPENSE-108 description: Create the single smallest delivery story needed to complete epic EXPENSE-107 (Change application color scheme from orange to purple). Keep the scope intentionally narrow so the Tiger Team can implement, review, and deploy it end to end. Ancestor EXPENSE-107 summary: Change application color scheme from orange to purple Ancestor EXPENSE-107 description: End-to-end delivery request to update the application's color scheme from orange to purple.
++
++Rules:
++- Treat the primary Jira issue above as the source of truth for the code change.
++- Use the parent context only as supporting background, never as a reason to replace the requested change.
++- Keep the change minimal and production-safe.
++- Prefer a single-file change when the request is trivial.
++- Only touch allowed paths when they are provided: repo-wide minimal edit
++- Leave the workspace ready for git commit and PR creation.
++
+
+# 2026-04-10 18:31:27.645526
++You are editing the Expense Manager repository on a dedicated project runner VM.
++
++Primary Jira issue to implement exactly:
++- Key: EXPENSE-110
++- Summary: Implement supporting logic for Change application color scheme from orange to purple
++- Description: Handle any supporting backend, API, data, or wiring changes required for story EXPENSE-108. Requested outcome: Create the single smallest delivery story needed to complete epic EXPENSE-107 (Change application color scheme from orange to purple). Keep the scope intentionally narrow so the Tiger Team can implement, review, and deploy it end to end.. Document assumptions for the lead.
++- Bot role: backend_developer
++
++Requested change:
++- Implement this issue exactly as written. Summary: Implement supporting logic for Change application color scheme from orange to purple Description: Handle any supporting backend, API, data, or wiring changes required for story EXPENSE-108. Requested outcome: Create the single smallest delivery story needed to complete epic EXPENSE-107 (Change application color scheme from orange to purple). Keep the scope intentionally narrow so the Tiger Team can implement, review, and deploy it end to end.. Document assumptions for the lead.
++
++Supporting context from parent Jira items:
++- Handle any supporting backend, API, data, or wiring changes required for story EXPENSE-108. Requested outcome: Create the single smallest delivery story needed to complete epic EXPENSE-107 (Change application color scheme from orange to purple). Keep the scope intentionally narrow so the Tiger Team can implement, review, and deploy it end to end.. Document assumptions for the lead. Ancestor EXPENSE-108 summary: Change application color scheme from orange to purple Ancestor EXPENSE-108 description: Create the single smallest delivery story needed to complete epic EXPENSE-107 (Change application color scheme from orange to purple). Keep the scope intentionally narrow so the Tiger Team can implement, review, and deploy it end to end. Ancestor EXPENSE-107 summary: Change application color scheme from orange to purple Ancestor EXPENSE-107 description: End-to-end delivery request to update the application's color scheme from orange to purple.
++
++Rules:
++- Treat the primary Jira issue above as the source of truth for the code change.
++- Use the parent context only as supporting background, never as a reason to replace the requested change.
++- Keep the change minimal and production-safe.
++- Prefer a single-file change when the request is trivial.
++- Only touch allowed paths when they are provided: repo-wide minimal edit
++- Leave the workspace ready for git commit and PR creation.
++
