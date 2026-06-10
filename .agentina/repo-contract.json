@@ -1,0 +1,25 @@
+{
+  "version": "1",
+  "repoName": "expense-manager",
+  "defaultBaseBranch": "main",
+  "contractPath": ".agentina/repo-contract.json",
+  "preferredGitProvider": "github",
+  "commandAliases": {
+    "expense-tracker-build": {
+      "alias": "expense-tracker-build",
+      "description": "Compile the Expense Tracker (standalone Maven module).",
+      "command": "mvn -q -DskipTests compile",
+      "shell": "bash",
+      "timeoutSeconds": 1200,
+      "env": { "MAVEN_OPTS": "-Xmx1g" }
+    },
+    "expense-tracker-test": {
+      "alias": "expense-tracker-test",
+      "description": "Run Expense Tracker tests.",
+      "command": "mvn -q -DskipTests=false test",
+      "shell": "bash",
+      "timeoutSeconds": 1800,
+      "env": { "MAVEN_OPTS": "-Xmx1g" }
+    }
+  }
+}
