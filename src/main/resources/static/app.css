@@ -162,6 +162,7 @@ table.ledger tbody tr:last-child td { border-bottom: 0; }
 
 /* Drawer */
 .drawer-backdrop { position: fixed; inset: 0; background: rgba(20,21,42,.42); display: flex; justify-content: flex-end; z-index: 40; animation: fade .15s ease; }
+.drawer-backdrop[hidden] { display: none; }
 .drawer { width: min(460px, 94vw); background: #fff; height: 100%; padding: 24px; display: flex; flex-direction: column; gap: 18px; box-shadow: -20px 0 60px rgba(20,21,42,.2); overflow-y: auto; }
 .drawer-head { display: flex; align-items: center; justify-content: space-between; }
 .drawer-head h2 { font-family: 'Fraunces', serif; font-size: 21px; margin: 0; }
