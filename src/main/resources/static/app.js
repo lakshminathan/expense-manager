@@ -1,5 +1,5 @@
 const API = '/api/expense-tracker';
-const state = { metadata: null, summary: null, expenses: [], budgets: [] };
+const state = { metadata: null, summary: null, expenses: [], budgets: [], page: 0, size: 20, total: 0, totalPages: 0 };
 
 const rupee = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
 const rupee2 = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 });
@@ -60,21 +60,30 @@ async function loadMetadata() {
 async function loadData() {
   const month = $('month-filter').value;
   const category = $('category-filter').value;
+  const query = $('query-filter') ? $('query-filter').value.trim() : '';
   const expenseParams = new URLSearchParams();
   if (month) expenseParams.set('month', month);
   if (category) expenseParams.set('category', category);
+  if (query) expenseParams.set('query', query);
+  expenseParams.set('page', state.page);
+  expenseParams.set('size', state.size);
 
-  const [expenses, budgets, summary] = await Promise.all([
+  const [paged, budgets, summary] = await Promise.all([
     api(`/expenses?${expenseParams.toString()}`),
     api(`/budgets?month=${encodeURIComponent(month)}`),
     api(`/summary?month=${encodeURIComponent(month)}`),
   ]);
-  state.expenses = expenses;
+  const items = paged.items || [];
+  state.expenses = items;
+  state.total = paged.total || 0;
+  state.totalPages = paged.totalPages || 0;
+  state.page = paged.page || 0;
   state.budgets = budgets;
   state.summary = summary;
 
   renderOverview();
-  renderExpenses(expenses);
+  renderExpenses(items);
+  renderPagination();
   renderBudgets();
   renderReports();
   renderSidebar();
@@ -132,6 +141,22 @@ function renderExpenses(expenses) {
         <button class="icon-btn" data-del="${e.id}" title="Delete">🗑</button>
       </div></td>
     </tr>`).join('');
+}
+
+function renderPagination() {
+  const ind = $('page-indicator');
+  if (!ind) return;
+  const totalPages = Math.max(state.totalPages, 1);
+  ind.textContent = `Page ${state.page + 1} of ${totalPages} (${state.total} items)`;
+  if ($('prev-page')) $('prev-page').disabled = state.page <= 0;
+  if ($('next-page')) $('next-page').disabled = state.page >= state.totalPages - 1;
+}
+
+function goToPage(delta) {
+  const next = state.page + delta;
+  if (next < 0 || next > state.totalPages - 1) return;
+  state.page = next;
+  loadData().catch((e) => toast(e.message, true));
 }
 
 function renderBudgets() {
@@ -275,7 +300,10 @@ function init() {
 
   $('nav').addEventListener('click', (e) => { const b = e.target.closest('.nav-item'); if (b) switchTab(b.dataset.tab); });
   $('month-filter').addEventListener('change', () => loadData().catch((e) => toast(e.message, true)));
-  $('category-filter').addEventListener('change', () => loadData().catch((e) => toast(e.message, true)));
+  $('category-filter').addEventListener('change', () => { state.page = 0; loadData().catch((e) => toast(e.message, true)); });
+  if ($('query-filter')) $('query-filter').addEventListener('input', () => { state.page = 0; loadData().catch((e) => toast(e.message, true)); });
+  if ($('prev-page')) $('prev-page').addEventListener('click', () => goToPage(-1));
+  if ($('next-page')) $('next-page').addEventListener('click', () => goToPage(1));
 
   $('add-expense-btn').addEventListener('click', () => { resetExpenseForm(); openDrawer('expense-drawer'); });
   $('add-budget-btn').addEventListener('click', () => openDrawer('budget-drawer'));
