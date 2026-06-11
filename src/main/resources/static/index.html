@@ -93,6 +93,10 @@
         <div class="toolbar">
           <div class="toolbar-left">
             <label class="field">
+              <span>Search</span>
+              <input id="query-filter" type="search" placeholder="Search description, merchant, owner">
+            </label>
+            <label class="field">
               <span>Category</span>
               <select id="category-filter"></select>
             </label>
@@ -114,6 +118,11 @@
             </table>
           </div>
         </section>
+        <div class="pagination-bar">
+          <button id="prev-page" class="btn btn-ghost" type="button">Prev</button>
+          <span id="page-indicator" class="muted">Page 1</span>
+          <button id="next-page" class="btn btn-ghost" type="button">Next</button>
+        </div>
       </section>
 
       <!-- ===== Budgets ===== -->

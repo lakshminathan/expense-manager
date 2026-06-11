@@ -188,3 +188,8 @@ table.ledger tbody tr:last-child td { border-bottom: 0; }
   .two-col, .stat-grid { grid-template-columns: 1fr 1fr; }
   .main { padding: 20px; }
 }
+
+
+.pagination-bar { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 16px; }
+.pagination-bar .muted { font-variant-numeric: tabular-nums; }
+.pagination-bar button[disabled] { opacity: .45; cursor: not-allowed; }
