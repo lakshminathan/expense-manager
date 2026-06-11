@@ -3,10 +3,6 @@ const state = {
   summary: null,
   expenses: [],
   budgets: [],
-  page: 0,
-  size: 20,
-  total: 0,
-  totalPages: 0,
 };
 
 const dom = {
@@ -23,9 +19,6 @@ const dom = {
   toast: document.getElementById('toast'),
   resetExpenseButton: document.getElementById('reset-expense-button'),
   resetBudgetButton: document.getElementById('reset-budget-button'),
-  prevPage: document.getElementById('prev-page'),
-  nextPage: document.getElementById('next-page'),
-  pageIndicator: document.getElementById('page-indicator'),
 };
 
 const rupee = new Intl.NumberFormat('en-IN', {
@@ -362,42 +355,20 @@ async function loadData() {
   if (month) expenseParams.set('month', month);
   if (category) expenseParams.set('category', category);
   if (query) expenseParams.set('query', query);
-  expenseParams.set('page', state.page);
-  expenseParams.set('size', state.size);
 
-  const [paged, budgets, summary] = await Promise.all([
+  const [expenses, budgets, summary] = await Promise.all([
     api(`/api/expense-tracker/expenses?${expenseParams.toString()}`),
     api(`/api/expense-tracker/budgets?month=${encodeURIComponent(month)}`),
     api(`/api/expense-tracker/summary?month=${encodeURIComponent(month)}`),
   ]);
 
-  const items = paged.items || [];
-  state.expenses = items;
-  state.total = paged.total || 0;
-  state.totalPages = paged.totalPages || 0;
-  state.page = paged.page || 0;
+  state.expenses = expenses;
   state.budgets = budgets;
   state.summary = summary;
-  renderExpenses(items);
+  renderExpenses(expenses);
   renderBudgets(budgets);
-  renderRecentActivity(items);
+  renderRecentActivity(expenses);
   renderSummary(summary);
-  renderPagination();
-}
-
-function renderPagination() {
-  if (!dom.pageIndicator) return;
-  const totalPages = Math.max(state.totalPages, 1);
-  dom.pageIndicator.textContent = `Page ${state.page + 1} of ${totalPages} · ${state.total} items`;
-  if (dom.prevPage) dom.prevPage.disabled = state.page <= 0;
-  if (dom.nextPage) dom.nextPage.disabled = state.page >= state.totalPages - 1;
-}
-
-function goToPage(delta) {
-  const next = state.page + delta;
-  if (next < 0 || next > state.totalPages - 1) return;
-  state.page = next;
-  loadData().catch((error) => showToast(error.message, true));
 }
 
 async function handleExpenseSubmit(event) {
@@ -493,11 +464,9 @@ function attachEvents() {
   dom.expenseTableBody.addEventListener('click', handleTableAction);
   dom.resetExpenseButton.addEventListener('click', resetExpenseForm);
   dom.resetBudgetButton.addEventListener('click', resetBudgetForm);
-  dom.monthFilter.addEventListener('change', () => { state.page = 0; loadData().catch((error) => showToast(error.message, true)); });
-  dom.categoryFilter.addEventListener('change', () => { state.page = 0; loadData().catch((error) => showToast(error.message, true)); });
-  dom.queryFilter.addEventListener('input', debounce(() => { state.page = 0; loadData().catch((error) => showToast(error.message, true)); }, 250));
-  if (dom.prevPage) dom.prevPage.addEventListener('click', () => goToPage(-1));
-  if (dom.nextPage) dom.nextPage.addEventListener('click', () => goToPage(1));
+  dom.monthFilter.addEventListener('change', () => loadData().catch((error) => showToast(error.message, true)));
+  dom.categoryFilter.addEventListener('change', () => loadData().catch((error) => showToast(error.message, true)));
+  dom.queryFilter.addEventListener('input', debounce(() => loadData().catch((error) => showToast(error.message, true)), 250));
 }
 
 function debounce(fn, delay) {

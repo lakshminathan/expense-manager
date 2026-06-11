@@ -39,22 +39,12 @@ public class ExpenseTrackerController {
         this.expenseTrackerService = expenseTrackerService;
     }
 
-    public record PagedExpenses(
-            List<ExpenseResponse> items,
-            long total,
-            int page,
-            int size,
-            int totalPages) {
-    }
-
     @GetMapping("/expenses")
-    public PagedExpenses listExpenses(
+    public List<ExpenseResponse> listExpenses(
             @RequestParam(required = false) String month,
             @RequestParam(required = false) String category,
-            @RequestParam(required = false) String query,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return expenseTrackerService.listExpenses(month, category, query, page, size);
+            @RequestParam(required = false) String query) {
+        return expenseTrackerService.listExpenses(month, category, query);
     }
 
     @PostMapping("/expenses")

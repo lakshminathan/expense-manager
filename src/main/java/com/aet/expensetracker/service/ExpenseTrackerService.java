@@ -5,7 +5,6 @@ import com.aet.expensetracker.controller.ExpenseTrackerController.BudgetResponse
 import com.aet.expensetracker.controller.ExpenseTrackerController.CategorySpend;
 import com.aet.expensetracker.controller.ExpenseTrackerController.ExpenseRequest;
 import com.aet.expensetracker.controller.ExpenseTrackerController.ExpenseResponse;
-import com.aet.expensetracker.controller.ExpenseTrackerController.PagedExpenses;
 import com.aet.expensetracker.controller.ExpenseTrackerController.MetadataResponse;
 import com.aet.expensetracker.controller.ExpenseTrackerController.SummaryResponse;
 import com.aet.expensetracker.domain.BudgetEntity;
@@ -41,27 +40,17 @@ public class ExpenseTrackerService {
     }
 
     @Transactional(readOnly = true)
-    public PagedExpenses listExpenses(String month, String category, String query, int page, int size) {
+    public List<ExpenseResponse> listExpenses(String month, String category, String query) {
         YearMonth yearMonth = parseMonth(month);
         String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
         ExpenseCategory categoryFilter = parseCategory(category);
 
-        List<ExpenseResponse> filtered = expenseRepository.findAllByOrderByExpenseDateDescIdDesc().stream()
+        return expenseRepository.findAllByOrderByExpenseDateDescIdDesc().stream()
                 .filter(expense -> yearMonth == null || YearMonth.from(expense.getExpenseDate()).equals(yearMonth))
                 .filter(expense -> categoryFilter == null || expense.getCategory() == categoryFilter)
                 .filter(expense -> normalizedQuery.isBlank() || matchesQuery(expense, normalizedQuery))
                 .map(this::toExpenseResponse)
                 .toList();
-
-        int safeSize = size <= 0 ? 20 : Math.min(size, 200);
-        int safePage = Math.max(page, 0);
-        long total = filtered.size();
-        int totalPages = safeSize == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
-        int from = Math.min(safePage * safeSize, filtered.size());
-        int to = Math.min(from + safeSize, filtered.size());
-        List<ExpenseResponse> pageItems = new java.util.ArrayList<>(filtered.subList(from, to));
-
-        return new PagedExpenses(pageItems, total, safePage, safeSize, totalPages);
     }
 
     public ExpenseResponse createExpense(ExpenseRequest request) {

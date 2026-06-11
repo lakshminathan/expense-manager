@@ -675,21 +675,3 @@ tbody td {
     min-width: 760px;
   }
 }
-
-
-.pagination-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 18px;
-}
-.pagination-bar .page-indicator {
-  font-size: 14px;
-  font-weight: 500;
-  opacity: 0.8;
-}
-.pagination-bar button[disabled] {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
