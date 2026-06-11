@@ -14,6 +14,11 @@ import com.aet.expensetracker.domain.ExpenseStatus;
 import com.aet.expensetracker.repository.BudgetRepository;
 import com.aet.expensetracker.repository.ExpenseRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,17 +45,22 @@ public class ExpenseTrackerService {
     }
 
     @Transactional(readOnly = true)
-    public List<ExpenseResponse> listExpenses(String month, String category, String query) {
+    public Page<ExpenseResponse> listExpenses(String month, String category, String query, int page, int size) {
         YearMonth yearMonth = parseMonth(month);
-        String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
+        LocalDate monthStart = null;
+        LocalDate monthEnd = null;
+        if (yearMonth != null) {
+            monthStart = yearMonth.atDay(1);
+            monthEnd = yearMonth.atEndOfMonth();
+        }
         ExpenseCategory categoryFilter = parseCategory(category);
+        String searchQuery = (query == null || query.isBlank()) ? null : query.trim().toLowerCase();
 
-        return expenseRepository.findAllByOrderByExpenseDateDescIdDesc().stream()
-                .filter(expense -> yearMonth == null || YearMonth.from(expense.getExpenseDate()).equals(yearMonth))
-                .filter(expense -> categoryFilter == null || expense.getCategory() == categoryFilter)
-                .filter(expense -> normalizedQuery.isBlank() || matchesQuery(expense, normalizedQuery))
-                .map(this::toExpenseResponse)
-                .toList();
+        Pageable pageable = PageRequest.of(page, size, Sort.by("expenseDate").descending().and(Sort.by("id").descending()));
+
+        Page<ExpenseEntity> expenseEntities = expenseRepository.findFilteredExpenses(monthStart, monthEnd, categoryFilter, searchQuery, pageable);
+
+        return expenseEntities.map(this::toExpenseResponse);
     }
 
     public ExpenseResponse createExpense(ExpenseRequest request) {
@@ -182,13 +192,7 @@ public class ExpenseTrackerService {
                 entity.getUpdatedAt());
     }
 
-    private boolean matchesQuery(ExpenseEntity expense, String query) {
-        return List.of(expense.getDescription(), expense.getMerchant(), expense.getOwnerName(), expense.getNote(), expense.getCategory().name())
-                .stream()
-                .filter(Objects::nonNull)
-                .map(String::toLowerCase)
-                .anyMatch(value -> value.contains(query));
-    }
+    // Removed private boolean matchesQuery method as filtering is now done in the repository
 
     private ExpenseCategory parseCategory(String category) {
         if (category == null || category.isBlank()) {

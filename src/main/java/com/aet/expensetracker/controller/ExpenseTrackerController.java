@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -40,11 +41,13 @@ public class ExpenseTrackerController {
     }
 
     @GetMapping("/expenses")
-    public List<ExpenseResponse> listExpenses(
+    public Page<ExpenseResponse> listExpenses(
             @RequestParam(required = false) String month,
             @RequestParam(required = false) String category,
-            @RequestParam(required = false) String query) {
-        return expenseTrackerService.listExpenses(month, category, query);
+            @RequestParam(required = false) String query,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return expenseTrackerService.listExpenses(month, category, query, page, size);
     }
 
     @PostMapping("/expenses")
