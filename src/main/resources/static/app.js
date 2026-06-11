@@ -1,493 +1,298 @@
-const state = {
-  metadata: null,
-  summary: null,
-  expenses: [],
-  budgets: [],
+const API = '/api/expense-tracker';
+const state = { metadata: null, summary: null, expenses: [], budgets: [] };
+
+const rupee = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+const rupee2 = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 });
+const dateFmt = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
+
+const TAB_META = {
+  overview: ['Overview', "A clean read on this month's spending."],
+  expenses: ['Expenses', 'Every expense in the workspace.'],
+  budgets:  ['Budgets', 'Set limits and watch category pressure.'],
+  reports:  ['Reports', 'How this month breaks down.'],
 };
 
-const dom = {
-  monthFilter: document.getElementById('month-filter'),
-  categoryFilter: document.getElementById('category-filter'),
-  queryFilter: document.getElementById('query-filter'),
-  refreshButton: document.getElementById('refresh-button'),
-  expenseForm: document.getElementById('expense-form'),
-  budgetForm: document.getElementById('budget-form'),
-  expenseTableBody: document.getElementById('expense-table-body'),
-  categoryBreakdown: document.getElementById('category-breakdown'),
-  budgetList: document.getElementById('budget-list'),
-  recentActivity: document.getElementById('recent-activity'),
-  toast: document.getElementById('toast'),
-  resetExpenseButton: document.getElementById('reset-expense-button'),
-  resetBudgetButton: document.getElementById('reset-budget-button'),
-};
+const $ = (id) => document.getElementById(id);
 
-const rupee = new Intl.NumberFormat('en-IN', {
-  style: 'currency',
-  currency: 'INR',
-  maximumFractionDigits: 2,
-});
-
-function defaultMonth() {
-  return new Date().toISOString().slice(0, 7);
-}
-
-function startCase(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (match) => match.toUpperCase());
-}
-
-function toNumber(value) {
-  return Number(value || 0);
-}
-
-function statusClass(value) {
-  return String(value || '').toLowerCase().replace(/\s+/g, '-').replace(/_/g, '-');
-}
-
-function showToast(message, isError = false) {
-  dom.toast.textContent = message;
-  dom.toast.style.background = isError ? 'rgba(140, 32, 41, 0.95)' : 'rgba(20, 34, 28, 0.94)';
-  dom.toast.classList.add('visible');
-  clearTimeout(showToast.timeoutId);
-  showToast.timeoutId = setTimeout(() => dom.toast.classList.remove('visible'), 2400);
-}
-
-async function api(path, options = {}) {
-  const response = await fetch(path, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
+async function api(path, options) {
+  const res = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json' },
     ...options,
   });
-
-  if (!response.ok) {
-    const payload = await response.text();
-    throw new Error(payload || `Request failed with status ${response.status}`);
+  if (!res.ok) {
+    let msg = `Request failed (${res.status})`;
+    try { const b = await res.json(); msg = b.message || b.error || msg; } catch (e) {}
+    throw new Error(msg);
   }
-
-  if (response.status === 204) {
-    return null;
-  }
-
-  return response.json();
+  return res.status === 204 ? null : res.json();
 }
 
-function populateSelect(select, values, includeAll = false) {
-  select.innerHTML = '';
-  if (includeAll) {
-    const option = document.createElement('option');
-    option.value = '';
-    option.textContent = 'All categories';
-    select.appendChild(option);
-  }
-
-  values.forEach((value) => {
-    const option = document.createElement('option');
-    option.value = value;
-    option.textContent = startCase(value);
-    select.appendChild(option);
-  });
+function toast(message, isError) {
+  const t = $('toast');
+  t.textContent = message;
+  t.classList.toggle('error', !!isError);
+  t.hidden = false;
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { t.hidden = true; }, 2600);
 }
 
-function fillForm(expense) {
-  document.getElementById('expense-id').value = expense.id;
-  document.getElementById('description').value = expense.description;
-  document.getElementById('merchant').value = expense.merchant;
-  document.getElementById('amount').value = expense.amount;
-  document.getElementById('expense-date').value = expense.expenseDate;
-  document.getElementById('expense-category').value = expense.category;
-  document.getElementById('payment-method').value = expense.paymentMethod;
-  document.getElementById('expense-status').value = expense.status;
-  document.getElementById('owner-name').value = expense.ownerName;
-  document.getElementById('receipt-url').value = expense.receiptUrl || '';
-  document.getElementById('expense-note').value = expense.note || '';
-  document.getElementById('reimbursable').checked = expense.reimbursable;
+function defaultMonth() { return new Date().toISOString().slice(0, 7); }
+function titleCase(s) { return (s || '').toLowerCase().replace(/(^|_)([a-z])/g, (_, p, c) => (p ? ' ' : '') + c.toUpperCase()); }
+
+function fillSelect(el, values, withAll) {
+  if (!el) return;
+  const opts = [];
+  if (withAll) opts.push('<option value="">All categories</option>');
+  values.forEach((v) => opts.push(`<option value="${v}">${titleCase(v)}</option>`));
+  el.innerHTML = opts.join('');
 }
 
-function resetExpenseForm() {
-  dom.expenseForm.reset();
-  document.getElementById('expense-id').value = '';
-  document.getElementById('expense-date').value = new Date().toISOString().slice(0, 10);
-}
-
-function resetBudgetForm() {
-  dom.budgetForm.reset();
-  document.getElementById('budget-month').value = defaultMonth();
-  document.getElementById('budget-threshold').value = 80;
-}
-
-function computePendingClaims(expenses) {
-  return expenses.filter((expense) => expense.reimbursable && !['approved', 'reimbursed'].includes(String(expense.status).toLowerCase()));
-}
-
-function computeTopCategory(summary) {
-  const items = [...(summary?.categoryBreakdown || [])].sort((left, right) => toNumber(right.amount) - toNumber(left.amount));
-  return items[0] || null;
-}
-
-function computeBudgetAttention(summary, budgets) {
-  if (!budgets.length) {
-    return {
-      title: 'No budgets yet',
-      copy: 'Set category budgets to unlock threshold monitoring and attention guidance.',
-      ledgerHealth: 'Planning needed',
-      ledgerHealthCopy: 'The ledger is active, but budget guardrails have not been defined yet.',
-    };
-  }
-
-  const spendByCategory = new Map((summary?.categoryBreakdown || []).map((item) => [item.category, toNumber(item.amount)]));
-  const budgetSignals = budgets.map((budget) => {
-    const limit = toNumber(budget.limitAmount);
-    const spent = spendByCategory.get(budget.category) || 0;
-    const threshold = toNumber(budget.alertThresholdPercent);
-    const usage = limit > 0 ? (spent / limit) * 100 : 0;
-    return {
-      category: budget.category,
-      threshold,
-      usage,
-      spent,
-      limit,
-    };
-  }).sort((left, right) => right.usage - left.usage);
-
-  const hottest = budgetSignals[0];
-  if (!hottest) {
-    return {
-      title: 'Stable',
-      copy: 'No categories are close to their threshold.',
-      ledgerHealth: 'Balanced month',
-      ledgerHealthCopy: 'Spend, budget pressure, and approval flow are healthy.',
-    };
-  }
-
-  if (hottest.usage >= 100) {
-    return {
-      title: `${startCase(hottest.category)} exceeded`,
-      copy: `${startCase(hottest.category)} is over budget at ${Math.round(hottest.usage)}% utilization.`,
-      ledgerHealth: 'Action required',
-      ledgerHealthCopy: 'At least one category is above budget and needs intervention or approval.',
-    };
-  }
-
-  if (hottest.usage >= hottest.threshold) {
-    return {
-      title: `${startCase(hottest.category)} nearing limit`,
-      copy: `${startCase(hottest.category)} crossed its ${hottest.threshold}% alert threshold.`,
-      ledgerHealth: 'Watch closely',
-      ledgerHealthCopy: 'Budget pressure is rising and the month needs active steering.',
-    };
-  }
-
-  return {
-    title: 'Stable',
-    copy: 'No categories are close to their threshold.',
-    ledgerHealth: 'Balanced month',
-    ledgerHealthCopy: 'Spend, budget pressure, and approval flow are healthy.',
-  };
-}
-
-function renderSummary(summary) {
-  const topCategory = computeTopCategory(summary);
-  const pendingClaims = computePendingClaims(state.expenses);
-  const pendingClaimsTotal = pendingClaims.reduce((total, expense) => total + toNumber(expense.amount), 0);
-  const runway = Math.max(toNumber(summary.budgetedTotal) - toNumber(summary.totalSpent), 0);
-  const attention = computeBudgetAttention(summary, state.budgets);
-  const budgetPressure = Math.max(0, Math.min(100, toNumber(summary.budgetConsumptionPercent)));
-
-  document.getElementById('current-month-label').textContent = summary.month;
-  document.getElementById('hero-total-spend').textContent = rupee.format(summary.totalSpent);
-  document.getElementById('hero-budget-usage').textContent = `${summary.budgetConsumptionPercent}%`;
-  document.getElementById('hero-attention-note').textContent = attention.copy;
-  document.getElementById('top-category-label').textContent = topCategory ? startCase(topCategory.category) : 'No spend yet';
-  document.getElementById('top-category-value').textContent = topCategory ? rupee.format(topCategory.amount) : rupee.format(0);
-
-  document.getElementById('total-spent').textContent = rupee.format(summary.totalSpent);
-  document.getElementById('reimbursable-total').textContent = rupee.format(summary.reimbursableTotal);
-  document.getElementById('approved-total').textContent = rupee.format(summary.approvedTotal);
-  document.getElementById('budgeted-total').textContent = rupee.format(summary.budgetedTotal);
-  document.getElementById('budget-percent').textContent = `${summary.budgetConsumptionPercent}% used`;
-  document.getElementById('expense-count').textContent = `${summary.expenseCount} expenses`;
-
-  document.getElementById('runway-left').textContent = rupee.format(runway);
-  document.getElementById('runway-copy').textContent = runway > 0
-    ? `You still have ${rupee.format(runway)} available before this month's budget cap.`
-    : 'The current month has used the full available budget.';
-  document.getElementById('pending-claims-count').textContent = String(pendingClaims.length);
-  document.getElementById('pending-claims-value').textContent = `${rupee.format(pendingClaimsTotal)} awaiting decision`;
-  document.getElementById('attention-title').textContent = attention.title;
-  document.getElementById('attention-copy').textContent = attention.copy;
-  document.getElementById('ledger-health').textContent = attention.ledgerHealth;
-  document.getElementById('ledger-health-copy').textContent = attention.ledgerHealthCopy;
-  document.getElementById('budget-pressure-label').textContent = `${summary.budgetConsumptionPercent}%`;
-  document.getElementById('budget-pressure-copy').textContent = attention.copy;
-  document.getElementById('budget-pressure-bar').style.width = `${budgetPressure}%`;
-
-  const sortedBreakdown = [...(summary.categoryBreakdown || [])].sort((left, right) => toNumber(right.amount) - toNumber(left.amount));
-  if (!sortedBreakdown.length) {
-    dom.categoryBreakdown.innerHTML = '<div class="empty-state">No spend recorded for this month yet.</div>';
-    return;
-  }
-
-  const max = Math.max(...sortedBreakdown.map((item) => toNumber(item.amount)));
-  dom.categoryBreakdown.innerHTML = sortedBreakdown.map((item) => {
-    const width = max > 0 ? (toNumber(item.amount) / max) * 100 : 0;
-    return `
-      <div class="breakdown-row">
-        <div class="breakdown-meta">
-          <div>
-            <strong>${startCase(item.category)}</strong>
-          </div>
-          <span>${rupee.format(item.amount)}</span>
-        </div>
-        <div class="breakdown-bar-shell">
-          <div class="breakdown-bar" style="width:${width}%"></div>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-function renderBudgets(budgets) {
-  if (!budgets.length) {
-    dom.budgetList.innerHTML = '<div class="empty-state">No budgets set for this month yet.</div>';
-    return;
-  }
-
-  const spendByCategory = new Map((state.summary?.categoryBreakdown || []).map((item) => [item.category, toNumber(item.amount)]));
-
-  dom.budgetList.innerHTML = budgets.map((budget) => {
-    const spent = spendByCategory.get(budget.category) || 0;
-    const limit = toNumber(budget.limitAmount);
-    const usage = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0;
-    return `
-      <article class="budget-row">
-        <div class="budget-meta">
-          <div>
-            <strong>${startCase(budget.category)}</strong>
-            <div class="muted">${budget.notes || 'No notes added yet.'}</div>
-          </div>
-          <span class="budget-pill">Alert at ${budget.alertThresholdPercent}%</span>
-        </div>
-        <div class="budget-meta">
-          <span>${rupee.format(spent)} spent</span>
-          <span>${rupee.format(budget.limitAmount)} budget</span>
-        </div>
-        <div class="budget-bar-shell">
-          <div class="budget-bar" style="width:${usage}%"></div>
-        </div>
-      </article>
-    `;
-  }).join('');
-}
-
-function renderRecentActivity(expenses) {
-  if (!expenses.length) {
-    dom.recentActivity.innerHTML = '<div class="empty-state">No recent activity for the selected view.</div>';
-    return;
-  }
-
-  const recent = [...expenses]
-    .sort((left, right) => String(right.expenseDate).localeCompare(String(left.expenseDate)))
-    .slice(0, 5);
-
-  dom.recentActivity.innerHTML = recent.map((expense) => `
-    <article class="activity-row">
-      <div class="activity-header">
-        <div>
-          <strong>${expense.description}</strong>
-          <div class="activity-copy">${expense.ownerName} · ${expense.merchant}</div>
-        </div>
-        <span class="activity-kicker">${startCase(expense.category)}</span>
-      </div>
-      <div class="budget-meta">
-        <span class="status-pill ${statusClass(expense.status)}">${startCase(expense.status)}</span>
-        <span>${expense.expenseDate} · ${rupee.format(expense.amount)}</span>
-      </div>
-    </article>
-  `).join('');
-}
-
-function renderExpenses(expenses) {
-  if (!expenses.length) {
-    dom.expenseTableBody.innerHTML = '<tr><td colspan="7"><div class="empty-state">No expenses match the current filter.</div></td></tr>';
-    return;
-  }
-
-  dom.expenseTableBody.innerHTML = expenses.map((expense) => `
-    <tr>
-      <td>
-        <div class="expense-title">
-          <strong>${expense.description}</strong>
-          <small>${expense.merchant}${expense.note ? ` · ${expense.note}` : ''}</small>
-        </div>
-      </td>
-      <td>${expense.ownerName}</td>
-      <td><span class="category-pill">${startCase(expense.category)}</span></td>
-      <td><span class="status-pill ${statusClass(expense.status)}">${startCase(expense.status)}</span></td>
-      <td>${expense.expenseDate}</td>
-      <td>${rupee.format(expense.amount)}</td>
-      <td>
-        <button class="table-action" type="button" data-action="edit" data-id="${expense.id}">Edit</button>
-        <button class="table-action delete" type="button" data-action="delete" data-id="${expense.id}">Delete</button>
-      </td>
-    </tr>
-  `).join('');
-}
-
+/* ---------------- data ---------------- */
 async function loadMetadata() {
-  state.metadata = await api('/api/expense-tracker/metadata');
-  populateSelect(dom.categoryFilter, state.metadata.categories, true);
-  populateSelect(document.getElementById('expense-category'), state.metadata.categories);
-  populateSelect(document.getElementById('budget-category'), state.metadata.categories);
-  populateSelect(document.getElementById('payment-method'), state.metadata.paymentMethods);
-  populateSelect(document.getElementById('expense-status'), state.metadata.statuses);
+  state.metadata = await api('/metadata');
+  fillSelect($('category-filter'), state.metadata.categories, true);
+  fillSelect($('expense-category'), state.metadata.categories);
+  fillSelect($('budget-category'), state.metadata.categories);
+  fillSelect($('payment-method'), state.metadata.paymentMethods);
+  fillSelect($('expense-status'), state.metadata.statuses);
 }
 
 async function loadData() {
-  const month = dom.monthFilter.value;
-  const category = dom.categoryFilter.value;
-  const query = dom.queryFilter.value.trim();
-
+  const month = $('month-filter').value;
+  const category = $('category-filter').value;
   const expenseParams = new URLSearchParams();
   if (month) expenseParams.set('month', month);
   if (category) expenseParams.set('category', category);
-  if (query) expenseParams.set('query', query);
 
   const [expenses, budgets, summary] = await Promise.all([
-    api(`/api/expense-tracker/expenses?${expenseParams.toString()}`),
-    api(`/api/expense-tracker/budgets?month=${encodeURIComponent(month)}`),
-    api(`/api/expense-tracker/summary?month=${encodeURIComponent(month)}`),
+    api(`/expenses?${expenseParams.toString()}`),
+    api(`/budgets?month=${encodeURIComponent(month)}`),
+    api(`/summary?month=${encodeURIComponent(month)}`),
   ]);
-
   state.expenses = expenses;
   state.budgets = budgets;
   state.summary = summary;
+
+  renderOverview();
   renderExpenses(expenses);
-  renderBudgets(budgets);
-  renderRecentActivity(expenses);
-  renderSummary(summary);
+  renderBudgets();
+  renderReports();
+  renderSidebar();
 }
 
-async function handleExpenseSubmit(event) {
-  event.preventDefault();
+/* ---------------- renders ---------------- */
+function renderSidebar() {
+  const s = state.summary || {};
+  $('side-spend').textContent = rupee.format(s.totalSpent || 0);
+  const pct = Math.round(s.budgetConsumptionPercent || 0);
+  $('side-budget').textContent = `${pct}% of budget used`;
+  $('side-meter').style.width = Math.min(pct, 100) + '%';
+}
 
-  const expenseId = document.getElementById('expense-id').value;
+function renderOverview() {
+  const s = state.summary || {};
+  $('ov-total').textContent = rupee.format(s.totalSpent || 0);
+  $('ov-count').textContent = `${s.expenseCount || 0} expenses`;
+  $('ov-budget').textContent = `${Math.round(s.budgetConsumptionPercent || 0)}%`;
+  $('ov-budgeted').textContent = `of ${rupee.format(s.budgetedTotal || 0)} budgeted`;
+  $('ov-reimb').textContent = rupee.format(s.reimbursableTotal || 0);
+  $('ov-approved').textContent = rupee.format(s.approvedTotal || 0);
+
+  const breakdown = (s.categoryBreakdown || []).slice();
+  const top = breakdown[0];
+  $('ov-top').textContent = top ? `${titleCase(top.category)} leads` : 'No spend yet';
+  renderBars('category-breakdown', breakdown.map((b) => ({ label: titleCase(b.category), value: b.amount })));
+
+  const recent = state.expenses.slice(0, 6);
+  $('recent-activity').innerHTML = recent.length ? recent.map((e) => `
+    <li>
+      <span class="act-dot"></span>
+      <div class="act-main"><strong>${escapeHtml(e.description)}</strong><small>${escapeHtml(e.ownerName)} · ${titleCase(e.category)}</small></div>
+      <span class="act-amt">${rupee.format(e.amount)}</span>
+    </li>`).join('') : '<div class="empty-state">No recent activity.</div>';
+}
+
+function renderExpenses(expenses) {
+  $('expenses-count').textContent = `${expenses.length} item${expenses.length === 1 ? '' : 's'}`;
+  const body = $('expense-table-body');
+  if (!expenses.length) {
+    body.innerHTML = '<tr><td colspan="7"><div class="empty-state">No expenses match this view.</div></td></tr>';
+    return;
+  }
+  body.innerHTML = expenses.map((e) => `
+    <tr>
+      <td><span class="cell-title">${escapeHtml(e.description)}</span><span class="cell-sub">${escapeHtml(e.merchant)}</span></td>
+      <td>${escapeHtml(e.ownerName)}</td>
+      <td><span class="pill cat">${titleCase(e.category)}</span></td>
+      <td><span class="pill ${e.status}">${titleCase(e.status)}</span></td>
+      <td>${dateFmt.format(new Date(e.expenseDate))}</td>
+      <td class="num amount">${rupee2.format(e.amount)}</td>
+      <td><div class="row-actions">
+        <button class="icon-btn" data-edit="${e.id}" title="Edit">✎</button>
+        <button class="icon-btn" data-del="${e.id}" title="Delete">🗑</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function renderBudgets() {
+  const spendByCat = {};
+  (state.summary?.categoryBreakdown || []).forEach((b) => { spendByCat[b.category] = b.amount; });
+  const list = $('budget-list');
+  list.innerHTML = state.budgets.length ? state.budgets.map((b) => {
+    const spend = spendByCat[b.category] || 0;
+    const pct = b.limitAmount > 0 ? Math.round((spend / b.limitAmount) * 100) : 0;
+    return `<div class="budget-item">
+      <div class="bi-head"><strong>${titleCase(b.category)}</strong><span class="muted">${rupee.format(spend)} / ${rupee.format(b.limitAmount)}</span></div>
+      <div class="bar-track"><div class="bar-fill ${pct > 100 ? 'over' : ''}" style="width:${Math.min(pct, 100)}%"></div></div>
+    </div>`;
+  }).join('') : '<div class="empty-state">No budgets set for this month.</div>';
+
+  renderBars('budget-pressure', state.budgets.map((b) => ({
+    label: titleCase(b.category),
+    value: spendByCat[b.category] || 0,
+    max: b.limitAmount,
+    over: (spendByCat[b.category] || 0) > b.limitAmount,
+  })));
+}
+
+function renderReports() {
+  const s = state.summary || {};
+  const count = s.expenseCount || 0;
+  $('rp-count').textContent = count;
+  $('rp-avg').textContent = rupee.format(count ? (s.totalSpent || 0) / count : 0);
+  const share = s.totalSpent > 0 ? Math.round((s.reimbursableTotal / s.totalSpent) * 100) : 0;
+  $('rp-reimb').textContent = `${share}%`;
+  $('rp-cats').textContent = (s.categoryBreakdown || []).length;
+  renderBars('report-breakdown', (s.categoryBreakdown || []).map((b) => ({ label: titleCase(b.category), value: b.amount })));
+}
+
+function renderBars(elId, rows) {
+  const el = $(elId);
+  if (!rows.length) { el.innerHTML = '<div class="empty-state">No data yet.</div>'; return; }
+  const max = Math.max(...rows.map((r) => r.max || r.value), 1);
+  el.innerHTML = rows.map((r) => {
+    const w = Math.min(Math.round((r.value / max) * 100), 100);
+    return `<div class="bar-row"><span>${r.label}</span><div class="bar-track"><div class="bar-fill ${r.over ? 'over' : ''}" style="width:${w}%"></div></div><span class="bar-val">${rupee.format(r.value)}</span></div>`;
+  }).join('');
+}
+
+function escapeHtml(s) { return (s ?? '').toString().replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+/* ---------------- tabs ---------------- */
+function switchTab(tab) {
+  document.querySelectorAll('.nav-item').forEach((n) => n.classList.toggle('is-active', n.dataset.tab === tab));
+  document.querySelectorAll('.tab').forEach((t) => {
+    const on = t.id === `tab-${tab}`;
+    t.classList.toggle('is-active', on);
+    t.hidden = !on;
+  });
+  const [title, sub] = TAB_META[tab];
+  $('page-title').textContent = title;
+  $('page-sub').textContent = sub;
+}
+
+/* ---------------- drawers ---------------- */
+function openDrawer(id) { $(id).hidden = false; }
+function closeDrawer(id) { $(id).hidden = true; }
+
+function resetExpenseForm() {
+  $('expense-form').reset();
+  $('expense-id').value = '';
+  $('expense-form-title').textContent = 'New expense';
+  $('delete-expense-btn').hidden = true;
+  $('expense-date').value = new Date().toISOString().slice(0, 10);
+}
+
+function openExpenseForEdit(id) {
+  const e = state.expenses.find((x) => String(x.id) === String(id));
+  if (!e) return;
+  $('expense-id').value = e.id;
+  $('expense-form-title').textContent = 'Edit expense';
+  $('description').value = e.description;
+  $('merchant').value = e.merchant;
+  $('amount').value = e.amount;
+  $('expense-date').value = e.expenseDate;
+  $('expense-category').value = e.category;
+  $('payment-method').value = e.paymentMethod;
+  $('expense-status').value = e.status;
+  $('owner-name').value = e.ownerName;
+  $('note').value = e.note || '';
+  $('reimbursable').checked = !!e.reimbursable;
+  $('delete-expense-btn').hidden = false;
+  $('delete-expense-btn').dataset.id = e.id;
+  openDrawer('expense-drawer');
+}
+
+async function submitExpense(ev) {
+  ev.preventDefault();
+  const id = $('expense-id').value;
   const payload = {
-    description: document.getElementById('description').value.trim(),
-    merchant: document.getElementById('merchant').value.trim(),
-    amount: Number(document.getElementById('amount').value),
-    expenseDate: document.getElementById('expense-date').value,
-    category: document.getElementById('expense-category').value,
-    paymentMethod: document.getElementById('payment-method').value,
-    status: document.getElementById('expense-status').value,
-    ownerName: document.getElementById('owner-name').value.trim(),
-    note: document.getElementById('expense-note').value.trim() || null,
-    receiptUrl: document.getElementById('receipt-url').value.trim() || null,
-    reimbursable: document.getElementById('reimbursable').checked,
+    description: $('description').value.trim(),
+    merchant: $('merchant').value.trim(),
+    amount: Number($('amount').value),
+    expenseDate: $('expense-date').value,
+    category: $('expense-category').value,
+    paymentMethod: $('payment-method').value,
+    status: $('expense-status').value,
+    ownerName: $('owner-name').value.trim(),
+    note: $('note').value.trim(),
+    reimbursable: $('reimbursable').checked,
   };
-
   try {
-    await api(expenseId ? `/api/expense-tracker/expenses/${expenseId}` : '/api/expense-tracker/expenses', {
-      method: expenseId ? 'PUT' : 'POST',
-      body: JSON.stringify(payload),
-    });
-    resetExpenseForm();
+    await api(id ? `/expenses/${id}` : '/expenses', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) });
+    closeDrawer('expense-drawer');
+    toast(id ? 'Expense updated' : 'Expense added');
     await loadData();
-    showToast(expenseId ? 'Expense updated.' : 'Expense saved.');
-  } catch (error) {
-    showToast(error.message, true);
-  }
+  } catch (e) { toast(e.message, true); }
 }
 
-async function handleBudgetSubmit(event) {
-  event.preventDefault();
+async function deleteExpense(id) {
+  try { await api(`/expenses/${id}`, { method: 'DELETE' }); toast('Expense deleted'); await loadData(); }
+  catch (e) { toast(e.message, true); }
+}
 
+async function submitBudget(ev) {
+  ev.preventDefault();
   const payload = {
-    budgetMonth: document.getElementById('budget-month').value,
-    category: document.getElementById('budget-category').value,
-    limitAmount: Number(document.getElementById('budget-limit').value),
-    alertThresholdPercent: Number(document.getElementById('budget-threshold').value),
-    notes: document.getElementById('budget-notes').value.trim() || null,
+    budgetMonth: $('budget-month').value,
+    category: $('budget-category').value,
+    limitAmount: Number($('budget-limit').value),
+    alertThresholdPercent: Number($('budget-threshold').value),
+    notes: $('budget-notes').value.trim(),
   };
-
   try {
-    await api('/api/expense-tracker/budgets', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
+    await api('/budgets', { method: 'POST', body: JSON.stringify(payload) });
+    closeDrawer('budget-drawer');
+    toast('Budget saved');
     await loadData();
-    showToast('Budget saved.');
-  } catch (error) {
-    showToast(error.message, true);
-  }
+  } catch (e) { toast(e.message, true); }
 }
 
-async function handleTableAction(event) {
-  const action = event.target.dataset.action;
-  const id = event.target.dataset.id;
-  if (!action || !id) {
-    return;
-  }
+/* ---------------- wire-up ---------------- */
+function init() {
+  $('month-filter').value = defaultMonth();
+  $('budget-month').value = defaultMonth();
 
-  const expense = state.expenses.find((item) => String(item.id) === String(id));
-  if (!expense) {
-    return;
-  }
+  $('nav').addEventListener('click', (e) => { const b = e.target.closest('.nav-item'); if (b) switchTab(b.dataset.tab); });
+  $('month-filter').addEventListener('change', () => loadData().catch((e) => toast(e.message, true)));
+  $('category-filter').addEventListener('change', () => loadData().catch((e) => toast(e.message, true)));
 
-  if (action === 'edit') {
-    fillForm(expense);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    return;
-  }
+  $('add-expense-btn').addEventListener('click', () => { resetExpenseForm(); openDrawer('expense-drawer'); });
+  $('add-budget-btn').addEventListener('click', () => openDrawer('budget-drawer'));
+  $('expense-form').addEventListener('submit', submitExpense);
+  $('budget-form').addEventListener('submit', submitBudget);
+  $('delete-expense-btn').addEventListener('click', (e) => { deleteExpense(e.target.dataset.id); closeDrawer('expense-drawer'); });
 
-  if (action === 'delete') {
-    if (!window.confirm(`Delete expense "${expense.description}"?`)) {
-      return;
-    }
-    try {
-      await api(`/api/expense-tracker/expenses/${id}`, { method: 'DELETE' });
-      await loadData();
-      showToast('Expense deleted.');
-    } catch (error) {
-      showToast(error.message, true);
-    }
-  }
+  document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => closeDrawer(b.dataset.close)));
+  document.querySelectorAll('.drawer-backdrop').forEach((d) => d.addEventListener('click', (e) => { if (e.target === d) d.hidden = true; }));
+
+  $('expense-table-body').addEventListener('click', (e) => {
+    const edit = e.target.closest('[data-edit]'); const del = e.target.closest('[data-del]');
+    if (edit) openExpenseForEdit(edit.dataset.edit);
+    if (del) deleteExpense(del.dataset.del);
+  });
+
+  loadMetadata().then(loadData).catch((e) => toast(e.message, true));
 }
 
-function attachEvents() {
-  dom.refreshButton.addEventListener('click', () => loadData().catch((error) => showToast(error.message, true)));
-  dom.expenseForm.addEventListener('submit', handleExpenseSubmit);
-  dom.budgetForm.addEventListener('submit', handleBudgetSubmit);
-  dom.expenseTableBody.addEventListener('click', handleTableAction);
-  dom.resetExpenseButton.addEventListener('click', resetExpenseForm);
-  dom.resetBudgetButton.addEventListener('click', resetBudgetForm);
-  dom.monthFilter.addEventListener('change', () => loadData().catch((error) => showToast(error.message, true)));
-  dom.categoryFilter.addEventListener('change', () => loadData().catch((error) => showToast(error.message, true)));
-  dom.queryFilter.addEventListener('input', debounce(() => loadData().catch((error) => showToast(error.message, true)), 250));
-}
-
-function debounce(fn, delay) {
-  let timeoutId;
-  return (...args) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => fn(...args), delay);
-  };
-}
-
-async function init() {
-  dom.monthFilter.value = defaultMonth();
-  document.getElementById('budget-month').value = defaultMonth();
-  document.getElementById('expense-date').value = new Date().toISOString().slice(0, 10);
-  document.getElementById('budget-threshold').value = 80;
-  await loadMetadata();
-  await loadData();
-  attachEvents();
-}
-
-init().catch((error) => {
-  showToast(error.message, true);
-  console.error(error);
-});
+document.addEventListener('DOMContentLoaded', init);
